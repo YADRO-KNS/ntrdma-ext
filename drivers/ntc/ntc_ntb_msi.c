@@ -1742,8 +1742,9 @@ static int ntc_ntb_dev_init(struct ntc_ntb_dev *dev)
 
 	ntc->ntb_dev = ntc_ntb_dma_dev(dev);
 
-	/* make sure link is disabled and warnings are cleared */
+	/* make sure link is disabled */
 	ntb_link_disable(dev->ntb);
+	/* make sure warnings are cleared */
 	ntb_db_is_unsafe(dev->ntb);
 	ntb_spad_is_unsafe(dev->ntb);
 
