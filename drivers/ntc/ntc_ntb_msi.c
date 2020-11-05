@@ -1051,7 +1051,8 @@ static void ntc_ntb_link_work(struct ntc_ntb_dev *dev)
 		ntc_ntb_enabled(dev);
 		if (dev->link_state != NTC_NTB_LINK_START)
 			goto out;
-		/* no break */
+		/* fall through */
+
 	case NTC_NTB_LINK_START:
 		switch (link_event) {
 		default:
