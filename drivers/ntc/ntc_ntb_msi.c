@@ -902,8 +902,6 @@ err:
 	ntc_ntb_error(dev);
 }
 
-static bool ntc_request_dma(struct ntc_dev *ntc);
-
 static inline int ntc_ntb_db_config_and_recv_addr(struct ntc_ntb_dev *dev)
 {
 	int rc;
@@ -921,7 +919,7 @@ static inline int ntc_ntb_db_config_and_recv_addr(struct ntc_ntb_dev *dev)
 
 	max_irqs = num_online_cpus();
 
-	if (max_irqs <= 0 || max_irqs> NTB_MAX_IRQS) {
+	if (max_irqs <= 0 || max_irqs > NTB_MAX_IRQS) {
 		ntc_ntb_dev_err(dev, "max_irqs %d - not supported", max_irqs);
 		rc = -EINVAL;
 		goto err_ntb_db;
@@ -1031,8 +1029,6 @@ static void ntc_ntb_link_work(struct ntc_ntb_dev *dev)
 	else
 		ntc_ntb_dev_dbg(dev, "link work state %d event %d",
 				dev->link_state, link_event);
-
-	ntc_request_dma(&dev->ntc);
 
 	switch (dev->link_state) {
 	case NTC_NTB_LINK_QUIESCE:
@@ -1736,6 +1732,7 @@ static int ntc_ntb_dev_init(struct ntc_ntb_dev *dev)
 	ntc->dev.parent = &dev->ntb->dev;
 
 	ntc->ntb_dev = ntc_ntb_dma_dev(dev);
+	ntc->dma_engine_dev = ntc->dma_chan[0].chan->device->dev;
 
 	/* make sure link is disabled */
 	ntb_link_disable(dev->ntb);
@@ -2060,6 +2057,10 @@ static int ntc_ntb_probe(struct ntb_client *self,
 
 	ntc_init_dma(&dev->ntc);
 
+	if (!ntc_request_dma(&dev->ntc)) {
+		ntc_ntb_dev_err(dev, "no dma");
+		return -ENODEV;
+	}
 	for (type = 0; type < NTC_NUM_DMA_CHAN_TYPES; type++)
 		atomic_set(&dev->ntc.dma_chan_rr_index[type], 0);
 

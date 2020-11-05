@@ -240,6 +240,7 @@ struct ntc_dev {
 	struct device			*ntb_dev;
 	struct ntc_dma_chan		dma_chan[NTC_MAX_DMA_CHANS];
 	atomic_t		dma_chan_rr_index[NTC_NUM_DMA_CHAN_TYPES];
+	struct device			*dma_engine_dev;
 	const struct ntc_ctx_ops	*ctx_ops;
 	struct ntc_own_mw		own_mws[NTC_MAX_NUM_MWS];
 	struct ntc_peer_mw		peer_mws[NTC_MAX_NUM_MWS];
@@ -1048,7 +1049,7 @@ int ntc_signal(struct ntc_dev *ntc, int vec);
 static inline int ntc_phys_local_buf_map(struct ntc_local_buf *buf,
 					struct ntc_dev *ntc)
 {
-	struct device *dev = ntc->ntb_dev;
+	struct device *dev = ntc->dma_engine_dev;
 
 	buf->dma_addr = dma_map_single(dev, buf->ptr, buf->size, DMA_TO_DEVICE);
 	if (unlikely(dma_mapping_error(dev, buf->dma_addr)))
@@ -1060,7 +1061,7 @@ static inline int ntc_phys_local_buf_map(struct ntc_local_buf *buf,
 static inline void ntc_phys_local_buf_unmap(struct ntc_local_buf *buf,
 					struct ntc_dev *ntc)
 {
-	dma_unmap_single(ntc->ntb_dev, buf->dma_addr, buf->size,
+	dma_unmap_single(ntc->dma_engine_dev, buf->dma_addr, buf->size,
 			DMA_TO_DEVICE);
 }
 
@@ -1831,7 +1832,7 @@ static inline int ntc_remote_buf_map(struct ntc_remote_buf *buf,
 				struct ntc_dev *ntc,
 				const struct ntc_remote_buf_desc *desc)
 {
-	struct device *dev = ntc->ntb_dev;
+	struct device *dev = ntc->dma_engine_dev;
 	phys_addr_t ptr;
 	dma_addr_t dma_addr;
 	void __iomem *io_addr;
@@ -1871,7 +1872,7 @@ static inline int ntc_remote_buf_map_phys(struct ntc_remote_buf *buf,
 					struct ntc_dev *ntc,
 					phys_addr_t ptr, u64 size)
 {
-	struct device *dev = ntc->ntb_dev;
+	struct device *dev = ntc->dma_engine_dev;
 	dma_addr_t dma_addr;
 
 	ntc_remote_buf_clear(buf);
@@ -1897,7 +1898,7 @@ static inline int ntc_remote_buf_map_phys(struct ntc_remote_buf *buf,
 static inline void ntc_remote_buf_unmap(struct ntc_remote_buf *buf,
 					struct ntc_dev *ntc)
 {
-	struct device *dev = ntc->ntb_dev;
+	struct device *dev = ntc->dma_engine_dev;
 
 	if (buf->dma_addr)
 		dma_unmap_resource(dev, buf->dma_addr, buf->size,
