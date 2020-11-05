@@ -94,6 +94,7 @@
 						QP_ENUM == IB_QPS_ERR ? "IB_QPS_ERR" :\
 						"Undefined state number"\
 
+struct ntrdma_iw_cm *ntrdma_iwcm;
 
 static int ntrdma_qp_file_release(struct inode *inode, struct file *filp);
 static long ntrdma_qp_file_ioctl(struct file *filp, unsigned int cmd,
@@ -2553,6 +2554,16 @@ static const struct ib_device_ops ntrdma_dev_ops = {
 	.del_gid		= ntrdma_del_gid,
 	.process_mad		= ntrdma_process_mad,
 
+	/* iWarp CM callbacks */
+	.iw_add_ref		= ntrdma_cm_add_ref,
+	.iw_rem_ref		= ntrdma_cm_rem_ref,
+	.iw_get_qp		= ntrdma_get_qp,
+	.iw_connect		= ntrdma_connect,
+	.iw_accept		= ntrdma_accept,
+	.iw_reject		= ntrdma_reject,
+	.iw_create_listen	= ntrdma_create_listen,
+	.iw_destroy_listen	= ntrdma_destroy_listen,
+
 	INIT_RDMA_OBJ_SIZE(ib_ah, ntrdma_ah, ibah),
 	INIT_RDMA_OBJ_SIZE(ib_cq, ntrdma_cq, ibcq),
 	INIT_RDMA_OBJ_SIZE(ib_pd, ntrdma_pd, ibpd),
@@ -2601,8 +2612,8 @@ int ntrdma_dev_ib_init(struct ntrdma_dev *dev)
 	/* ops section */
 	ib_set_device_ops(ibdev, &ntrdma_dev_ops);
 
-	ibdev->iwcm = ntrdma_cm_init(ibdev->name);
-	if (!ibdev->iwcm) {
+	ntrdma_iwcm = ntrdma_cm_init(dev);
+	if (!ntrdma_iwcm) {
 		rc = -ENOMEM;
 		goto err_cm;
 	}
@@ -2614,7 +2625,7 @@ int ntrdma_dev_ib_init(struct ntrdma_dev *dev)
 
 err_ib:
 	ntrdma_err(dev, "got rc = %d on ib_register_device", rc);
-	ntrdma_cm_deinit(ibdev->iwcm);
+	ntrdma_cm_deinit(dev);
 err_cm:
 	return rc;
 }
@@ -2623,7 +2634,7 @@ void ntrdma_dev_ib_deinit(struct ntrdma_dev *dev)
 {
 	ntrdma_info(dev, "NTRDMA IB dev deinit");
 	ib_unregister_device(&dev->ibdev);
-	ntrdma_cm_deinit(dev->ibdev.iwcm);
+	ntrdma_cm_deinit(dev);
 }
 
 int __init ntrdma_ib_module_init(void)

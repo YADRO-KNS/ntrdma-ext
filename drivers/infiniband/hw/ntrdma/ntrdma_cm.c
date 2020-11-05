@@ -184,7 +184,7 @@ discard_iw_cm_id(struct ntrdma_dev *dev,
 	kmem_cache_free(ntrdma_iwcm->cmid_node_slab, node);
 }
 
-static struct ib_qp *ntrdma_get_qp(struct ib_device *ibdev, int qpn)
+struct ib_qp *ntrdma_get_qp(struct ib_device *ibdev, int qpn)
 {
 	struct ntrdma_qp *qp;
 	struct ntrdma_dev *dev;
@@ -700,7 +700,7 @@ int ntrdma_cmd_recv_cm(struct ntrdma_dev *dev,
 	return 0;
 }
 
-static void ntrdma_cm_add_ref(struct ib_qp *ibqp)
+void ntrdma_cm_add_ref(struct ib_qp *ibqp)
 {
 	struct ntrdma_qp *qp = ntrdma_ib_qp(ibqp);
 
@@ -708,14 +708,14 @@ static void ntrdma_cm_add_ref(struct ib_qp *ibqp)
 }
 
 /*Might be called by upprt layer with spinlock irqdisable*/
-static void ntrdma_cm_rem_ref(struct ib_qp *ibqp)
+void ntrdma_cm_rem_ref(struct ib_qp *ibqp)
 {
 	struct ntrdma_qp *qp = ntrdma_ib_qp(ibqp);
 
 	ntrdma_qp_put(qp);
 }
 
-static int ntrdma_create_listen(struct iw_cm_id *cm_id, int backlog)
+int ntrdma_create_listen(struct iw_cm_id *cm_id, int backlog)
 {
 	struct ib_device *ibdev = cm_id->device;
 	struct ntrdma_dev *dev = ntrdma_ib_dev(ibdev);
@@ -727,7 +727,7 @@ static int ntrdma_create_listen(struct iw_cm_id *cm_id, int backlog)
 	return store_iw_cm_id(dev, -1, cm_id);
 }
 
-static int ntrdma_connect(struct iw_cm_id *cm_id, struct iw_cm_conn_param *conn_param)
+int ntrdma_connect(struct iw_cm_id *cm_id, struct iw_cm_conn_param *conn_param)
 {
 	struct ib_device *ibdev = cm_id->device;
 	struct ntrdma_dev *dev = ntrdma_ib_dev(ibdev);
@@ -846,7 +846,7 @@ err_state:
 	return rc;
 }
 
-static int ntrdma_accept(struct iw_cm_id *cm_id, struct iw_cm_conn_param *conn_param)
+int ntrdma_accept(struct iw_cm_id *cm_id, struct iw_cm_conn_param *conn_param)
 {
 	struct ib_device *ibdev = cm_id->device;
 	struct ntrdma_dev *dev = ntrdma_ib_dev(ibdev);
@@ -934,7 +934,7 @@ static int ntrdma_accept(struct iw_cm_id *cm_id, struct iw_cm_conn_param *conn_p
 }
 
 
-static int ntrdma_reject(struct iw_cm_id *cm_id, const void *pdata, u8 pdata_len)
+int ntrdma_reject(struct iw_cm_id *cm_id, const void *pdata, u8 pdata_len)
 {
 	struct ib_device *ibdev = cm_id->device;
 	struct ntrdma_dev *dev = ntrdma_ib_dev(ibdev);
@@ -944,8 +944,8 @@ static int ntrdma_reject(struct iw_cm_id *cm_id, const void *pdata, u8 pdata_len
 
 	struct ntrdma_iw_cm_req rejmsg = {
 			.cb = {
-					.cmd_prep = ntrdma_iw_cm_gen_perp,
-					.rsp_cmpl = ntrdma_iw_cm_gen_cmpl,
+				.cmd_prep = ntrdma_iw_cm_gen_perp,
+				.rsp_cmpl = ntrdma_iw_cm_gen_cmpl,
 			},
 			.op = NTRDMA_IW_CM_REJECT,
 			.qpn = -1,
@@ -973,7 +973,7 @@ static int ntrdma_reject(struct iw_cm_id *cm_id, const void *pdata, u8 pdata_len
 	return ntrdma_cmd_send(dev, &rejmsg);
 }
 
-static int ntrdma_destroy_listen(struct iw_cm_id *cm_id)
+int ntrdma_destroy_listen(struct iw_cm_id *cm_id)
 {
 	struct ib_device *ibdev = cm_id->device;
 	struct ntrdma_dev *dev = ntrdma_ib_dev(ibdev);
@@ -991,44 +991,32 @@ static int ntrdma_destroy_listen(struct iw_cm_id *cm_id)
 	return 0;
 }
 
-struct iw_cm_verbs*
-ntrdma_cm_init(const char *name)
+struct ntrdma_iw_cm*
+ntrdma_cm_init(struct ntrdma_dev *dev)
 {
 	struct ntrdma_iw_cm *ntrdma_iwcm;
-	struct iw_cm_verbs *iwcm;
 
 	ntrdma_iwcm = kzalloc(sizeof(*ntrdma_iwcm), GFP_KERNEL);
 	if (!ntrdma_iwcm)
 		return NULL;
 
+	dev->iwcm = ntrdma_iwcm;
 	ntrdma_iwcm->cmid_node_slab = KMEM_CACHE(ntrdma_iw_cm_id_node, 0);
 	if (!ntrdma_iwcm->cmid_node_slab)
 		goto err_slab;
 
-	iwcm = &ntrdma_iwcm->iwcm;
-	iwcm->add_ref = ntrdma_cm_add_ref;
-	iwcm->rem_ref = ntrdma_cm_rem_ref;
-	iwcm->get_qp = ntrdma_get_qp;
-	iwcm->connect = ntrdma_connect;
-	iwcm->accept = ntrdma_accept;
-	iwcm->reject = ntrdma_reject;
-	iwcm->create_listen = ntrdma_create_listen;
-	iwcm->destroy_listen = ntrdma_destroy_listen;
-	memcpy(iwcm->ifname, name,
-			sizeof(iwcm->ifname));
-
 	INIT_LIST_HEAD(&ntrdma_iwcm->ntrdma_iw_cm_list);
 	rwlock_init(&ntrdma_iwcm->slock);
 
-	return iwcm;
+	return ntrdma_iwcm;
 err_slab:
 	kfree(ntrdma_iwcm);
 	return NULL;
 }
 
-void ntrdma_cm_deinit(struct iw_cm_verbs *iwcm)
+void ntrdma_cm_deinit(struct ntrdma_dev *dev)
 {
-	struct ntrdma_iw_cm *ntrdma_iwcm = iwcm_2_ntrdma_iwcm(iwcm);
+	struct ntrdma_iw_cm *ntrdma_iwcm = iwcm_2_ntrdma_iwcm(dev);
 	kmem_cache_destroy(ntrdma_iwcm->cmid_node_slab);
 	kfree(ntrdma_iwcm);
 }

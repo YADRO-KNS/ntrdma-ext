@@ -186,6 +186,7 @@ struct ntrdma_dev {
 	/* NUMA node */
 	int				node;
 
+	struct ntrdma_iw_cm		*iwcm;
 	/* The non-transparent channel back end implementation */
 	struct ntc_dev			*ntc;
 	struct work_struct		ntc_link_reset_work;
