@@ -1206,7 +1206,7 @@ static int ntrdma_query_qp(struct ib_qp *ibqp,
 	if (!ibqp_mask)
 		return 0;
 
-	if (!(ibqp_mask & (IB_QP_STATE | IB_QP_DEST_QPN))) {
+	if (!(ibqp_mask & (IB_QP_STATE | IB_QP_CAP | IB_QP_DEST_QPN))) {
 		ntrdma_err(dev, "Not supported ibqp mask %d\n", ibqp_mask);
 		return -EINVAL;
 	}
