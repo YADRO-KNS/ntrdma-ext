@@ -913,18 +913,13 @@ static inline int ntc_ntb_db_config_and_recv_addr(struct ntc_ntb_dev *dev)
 	phys_addr_t peer_irq_phys_addr_base;
 	u64 peer_db_mask;
 	int max_irqs;
-	u64 db_bits;
-
-	if (!ntc_request_dma(ntc)) {
-		ntc_ntb_dev_err(dev, "no dma");
-		return -ENODEV;
-	}
+	u64 db_bits = ntb_db_valid_mask(dev->ntb);
 
 	ntc_ntb_recv_addr(dev);
 
 	ntc->peer_irq_num = 0;
 
-	max_irqs = ntb_db_vector_count(dev->ntb);
+	max_irqs = num_online_cpus();
 
 	if (max_irqs <= 0 || max_irqs> NTB_MAX_IRQS) {
 		ntc_ntb_dev_err(dev, "max_irqs %d - not supported", max_irqs);
@@ -948,7 +943,6 @@ static inline int ntc_ntb_db_config_and_recv_addr(struct ntc_ntb_dev *dev)
 	if (unlikely(rc < 0))
 		goto err_res_map;
 
-	db_bits = ntb_db_valid_mask(dev->ntb);
 	for (i = 0; i < max_irqs && db_bits; i++) {
 		/*FIXME This is not generic implementation,
 		 * Sky-lake implementation, see intel_ntb3_peer_db_set() */
@@ -2017,7 +2011,7 @@ static int set_affinity(struct ntb_dev *ntb)
 	struct pci_dev *pdev = ntb->pdev;
 	unsigned int online_cpus = 0;
 
-	max_irqs = ntb_db_vector_count(ntb);
+	max_irqs = num_online_cpus();
 	if (max_irqs <= 0 || max_irqs > NTB_MAX_IRQS) {
 		pr_err("max_irqs %d is not supported\n", max_irqs);
 		return -EFAULT;
