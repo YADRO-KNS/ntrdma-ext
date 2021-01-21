@@ -51,7 +51,9 @@
 #define NTC_COUNTERS
 #include "ntc.h"
 
+#if defined(CONFIG_X86)
 #include <asm/e820/api.h>
+#endif
 
 #include "ntc_internal.h"
 #define CREATE_TRACE_POINTS
@@ -296,6 +298,7 @@ static bool ntc_check_reserved(unsigned long start, unsigned long end)
 	}
 
 	success = true;
+#if defined(CONFIG_X86)
 	for (i = E820_TYPE_RAM; i <= E820_TYPE_RESERVED_KERN; i++) {
 		if (e820__mapped_any(start, end, i)) {
 			if (i != E820_TYPE_RESERVED) {
@@ -311,6 +314,7 @@ static bool ntc_check_reserved(unsigned long start, unsigned long end)
 			success = false;
 		}
 	}
+#endif
 
 	return success;
 }

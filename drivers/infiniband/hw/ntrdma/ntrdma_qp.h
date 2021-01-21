@@ -34,7 +34,11 @@
 #define NTRDMA_QP_H
 
 #include <rdma/ib_verbs.h>
+
+#if defined(CONFIG_X86)
 #include <asm/tsc.h>
+#endif
+
 #include "ntrdma_cmd.h"
 #include "ntrdma_ring.h"
 #include "ntrdma_res.h"
