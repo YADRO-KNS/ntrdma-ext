@@ -544,8 +544,7 @@ more:
 			goto dma_err;
 		}
 
-		rc = ntc_req_signal(dev->ntc, eth->dma_chan, NULL, NULL,
-				NTB_DEFAULT_VEC(dev->ntc));
+		rc = ntc_signal(dev->ntc, NTB_DEFAULT_VEC(dev->ntc));
 		if (unlikely(rc < 0)) {
 			ntrdma_err(dev, "ntc_req_signal failed. rc=%d", rc);
 			goto dma_err;
@@ -835,8 +834,7 @@ static netdev_tx_t ntrdma_eth_start_xmit(struct sk_buff *skb,
 			goto err_memcpy;
 		}
 
-		rc = ntc_req_signal(dev->ntc, eth->dma_chan, NULL, NULL,
-				NTB_DEFAULT_VEC(dev->ntc));
+		rc = ntc_signal(dev->ntc, NTB_DEFAULT_VEC(dev->ntc));
 		if (unlikely(rc < 0)) {
 			ntrdma_err(dev, "ntc_req_signal failed. rc=%d", rc);
 			goto err_memcpy;

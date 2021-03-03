@@ -672,7 +672,7 @@ static inline int ntc_ntb_db_config(struct ntc_ntb_dev *dev)
 	phys_addr_t peer_irq_phys_addr_base;
 	u64 peer_db_mask;
 	int max_irqs;
-	u64 db_bits = 0xfffffffffffffff;
+	u64 db_bits = 0xffffffffffffffff;
 
 	ntc->peer_irq_num = 0;
 

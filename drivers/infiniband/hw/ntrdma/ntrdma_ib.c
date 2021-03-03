@@ -58,7 +58,7 @@
 #define NTRDMA_PKEY_DEFAULT 0xffff
 #define NTRDMA_GIB_TBL_LEN 1
 #define NTRDMA_PKEY_TBL_LEN 2
-#define RDMA_DRIVER_NTRDMA (RDMA_DRIVER_SIW + 16)
+#define RDMA_DRIVER_NTRDMA 17
 
 #define DELL_VENDOR_ID 0x1028
 #define NOT_SUPPORTED 0
@@ -165,6 +165,10 @@ static int ntrdma_query_gid(struct ib_device *ibdev,
 struct ntrdma_ah {
 	struct ib_ah ibah;
 	struct rdma_ah_attr attr;
+};
+
+struct ntrdma_ucontext {
+		struct ib_ucontext ibucontext;
 };
 
 /* if required, one needs to implement:
@@ -1087,7 +1091,7 @@ static int ntrdma_query_qp(struct ib_qp *ibqp,
 	if (!ibqp_mask)
 		return 0;
 
-	if (!(ibqp_mask & (IB_QP_STATE | IB_QP_DEST_QPN))) {
+	if (!(ibqp_mask & (IB_QP_STATE | IB_QP_CAP | IB_QP_DEST_QPN))) {
 		ntrdma_err(dev, "Not supported ibqp mask %d\n", ibqp_mask);
 		return -EINVAL;
 	}
@@ -2265,7 +2269,7 @@ static const struct ib_device_ops ntrdma_dev_ops = {
 	INIT_RDMA_OBJ_SIZE(ib_ah, ntrdma_ah, ibah),
 	INIT_RDMA_OBJ_SIZE(ib_cq, ntrdma_cq, ibcq),
 	INIT_RDMA_OBJ_SIZE(ib_pd, ntrdma_pd, ibpd),
-//	INIT_RDMA_OBJ_SIZE(ib_ucontext, ntrdma_ucontext, ib_uctx),
+	INIT_RDMA_OBJ_SIZE(ib_ucontext, ntrdma_ucontext, ibucontext),
 };
 
 int ntrdma_dev_ib_init(struct ntrdma_dev *dev)
